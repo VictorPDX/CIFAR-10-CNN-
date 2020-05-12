@@ -12,6 +12,7 @@ from keras.datasets import cifar10
 from keras import regularizers
 from keras.callbacks import LearningRateScheduler
 import numpy as np
+import matplotlib as plt
 
 
 
@@ -50,7 +51,7 @@ def load_normalized_data():
     return x_train, y_train, x_test, y_test
 
 
-def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test):
+def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment):
     # Create the model
     model = Sequential()
     model.add(Conv2D(32, (3, 3), padding='same', input_shape=input_nodes, activation='relu'))
@@ -59,6 +60,13 @@ def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test):
     # model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
+
+    if experiment == 3:
+        model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
+        # model.add(Activation('relu'))
+        model.add(Conv2D(64, (3, 3), activation='relu'))
+        # model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
     # model.add(Activation('relu'))
@@ -74,19 +82,20 @@ def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test):
     model.add(Dense(output_nodes, activation='softmax'))
     # model.add(Activation('softmax'))
 
-    #data augmentation
-    datagen = ImageDataGenerator(
-                    featurewise_center=False,  # set input mean to 0 over the dataset
-                    samplewise_center=False,  # set each sample mean to 0
-                    featurewise_std_normalization=False,  # divide inputs by std of the dataset
-                    samplewise_std_normalization=False,  # divide each input by its std
-                    zca_whitening=False,  # apply ZCA whitening
-                    rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
-                    width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
-                    height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
-                    horizontal_flip=True,  # randomly flip images
-                    vertical_flip=False  # randomly flip images
-                    )
+    if experiment == 4:
+        # data augmentation
+        datagen = ImageDataGenerator(
+                        featurewise_center=False,  # set input mean to 0 over the dataset
+                        samplewise_center=False,  # set each sample mean to 0
+                        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+                        samplewise_std_normalization=False,  # divide each input by its std
+                        zca_whitening=False,  # apply ZCA whitening
+                        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
+                        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+                        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+                        horizontal_flip=True,  # randomly flip images
+                        vertical_flip=False  # randomly flip images
+                        )
 
 
     # Compute quantities required for feature-wise normalization
@@ -168,8 +177,11 @@ def main():
     num_of_inputs = x_train.shape[1:]
     num_of_outputs = len(np.unique(y_train))
     
+    experiment = [2, 3, 4]
+
     # build model
-    CNN(num_of_inputs, num_of_outputs, x_train, y_train, x_test, y_test)
+    for e in experiment:
+        CNN(num_of_inputs, num_of_outputs, x_train, y_train, x_test, y_test, experiment[e])
 
 
 
