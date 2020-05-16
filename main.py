@@ -12,9 +12,15 @@ from keras.datasets import cifar10
 from keras import regularizers
 from keras.callbacks import LearningRateScheduler
 import numpy as np
-import matplotlib.pyplot as plt
 from keras import utils
 from keras.datasets import cifar10
+import time
+
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+
 
 plt.style.use('seaborn-whitegrid')
 
@@ -53,44 +59,47 @@ def load_normalized_data():
     return x_train, y_train, x_test, y_test
 
 
-def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment):
+def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment, eta, optimizer):
+    start = time.time()
     # Create the model
     model = Sequential()
+    # LAYER 1
     # model.add(Conv2D(32, (3, 3), padding='same', input_shape=input_nodes, activation='relu'))
-    model.add(Conv2D(32, (3, 3), padding='same', input_shape=input_nodes, activation='relu'))
-    # model.add(Activation('relu'))
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-    # model.add(Activation('relu'))
+    model.add(Conv2D(32, (3, 3), padding='same', input_shape=input_nodes))
+    model.add(Activation('relu'))
+
+    # LAYER 2
+    model.add(Conv2D(32, (3, 3)))
+    model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
-
+    # LAYER 3
     model.add(Conv2D(64, (3, 3), padding='same'))
     model.add(Activation('relu'))
+    
+    # LAYER 4
     model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
     if experiment >= 3:
+        # LAYER 7
         model.add(Conv2D(128, (3, 3), padding='same'))
-        model.add(Activation('relu'))
-        model.add(Conv2D(128, (3, 3)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
 
     if experiment >= 5:
-        model.add(Conv2D(256, (3, 3), padding='same'))
+        # LAYER 8
+        model.add(Conv2D(128, (3, 3), padding='same'))
         model.add(Activation('relu'))
-        model.add(Conv2D(256, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        # model.add(Dropout(0.25))
 
-        model.add(Conv2D(512, (3, 3), padding='same'))
-        model.add(Activation('relu'))
-        model.add(Conv2D(512, (3, 3)))
+        # LAYER 9
+        model.add(Conv2D(128, (3, 3), padding='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
@@ -99,15 +108,25 @@ def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment)
 
 
     model.add(Flatten())
+    # Layer 5
     model.add(Dense(512))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
+    
+    # LAYER 6
     model.add(Dense(output_nodes))
     model.add(Activation('softmax'))
+    
+    
+    if optimizer == 'sgd':
+        opt = keras.optimizers.SGD(learning_rate=eta, momentum=0.0, nesterov=False)
+    elif optimizer == 'adam':
+        opt = keras.optimizers.Adam(learning_rate=eta, beta_1=0.9, beta_2=0.999, epsilon=1e-07)
+    else:
+        opt = keras.optimizers.rmsprop(lr=eta, decay=1e-6)
 
-    opt_rms = keras.optimizers.rmsprop(lr=0.001, decay=1e-6)
     model.compile(loss='categorical_crossentropy', 
-                  optimizer=opt_rms, 
+                  optimizer=opt, 
                   metrics=['accuracy']
                   )
     model.summary()
@@ -117,19 +136,8 @@ def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment)
     batch_size = 64
     data_augmentation = False
 
-    # nImg = y_train.shape[0]
-    # nRow = y_train.shape[1]
-    # nCol = y_train.shape[2]
-    # # nClr = y_train.shape[3]
-    # y_train = y_train.reshape(nImg, nRow*nCol)
 
-    # nImg = x_test.shape[0]
-    # nRow = x_test.shape[1]
-    # nCol = x_test.shape[2]
-    # nClr = x_test.shape[3]
-    # x_test = x_test.reshape(nImg, nRow*nCol, nClr)
-
-    if experiment != 4:
+    if experiment < 4:
         print('Not using data augmentation.')
         trained_model = model.fit(x_train, y_train, batch_size=batch_size,
                             epochs=epochs,
@@ -180,55 +188,28 @@ def CNN(input_nodes, output_nodes, x_train, y_train, x_test, y_test, experiment)
                             )
 
 
-
-    # if experiment == 4:
-    #     # data augmentation
-    #     datagen = ImageDataGenerator(
-    #                     featurewise_center=False,  # set input mean to 0 over the dataset
-    #                     samplewise_center=False,  # set each sample mean to 0
-    #                     featurewise_std_normalization=False,  # divide inputs by std of the dataset
-    #                     samplewise_std_normalization=False,  # divide each input by its std
-    #                     zca_whitening=False,  # apply ZCA whitening
-    #                     rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
-    #                     width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
-    #                     height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
-    #                     horizontal_flip=True,  # randomly flip images
-    #                     vertical_flip=False  # randomly flip images
-    #                     )
-
-
-    # # Compute quantities required for feature-wise normalization
-    # # (std, mean, and principal components if ZCA whitening is applied).
-    # datagen.fit(x_train)
-
-
-    # Compile the model
-
-
-    
-
-    # Fit the model on the batches generated by datagen.flow().
-    # model.fit_generator(
-    #                     datagen.flow(x_train, y_train, batch_size=batch_size),
-    #                     epochs=epochs,
-    #                     validation_data=(x_test, y_test)
-    #                     )
-    
     # evaluate the accuracy
     test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
 
     activation_name = 'relu'
 
-    print("\nAccuracy over test set: ", test_accuracy)
+    label =  optimizer + " eta " + str(eta) + " exp " + str(experiment) + " "
+
+    plotAccuracy(trained_model, label)
+    plotLoss(trained_model,     label)
+    
+    print("Accuracy on Training: %s"%(model.scores[1]))
+    print("\n\nAccuracy over test set: ", test_accuracy)
     print("Loss over the test set: ", test_loss)
-    plotAccuracy(trained_model, str(experiment) )
-    plotLoss(trained_model, str(experiment))
+    lapse_time = time.time() - start
+    print("\n\nTOTAL TIME: %0.2f sec\n\n\n"%lapse_time)
+
 
 
     # model_name='cifar-10-cnn-'+str(experiment)
     # model_path = os.getcwd() + "/model/"
-    # model.save(model_path + model_name+'.hd5') # Keras model
-    print("Saved Keras model")
+    model.save(model_path + model_name+'.hd5') # Keras model
+    print("Saved Keras model\n\n\n")
 
 def plotAccuracy(model, activation_name):
     """This plots the training and validation accuracy
@@ -239,7 +220,7 @@ def plotAccuracy(model, activation_name):
     
     # get the accuracies from the model
     plt.plot(model.history['accuracy'],    'blue', label='Training')
-    plt.plot(model.history['val_accuracy'], 'red', label='Validation')
+    plt.plot(model.history['val_accuracy'], 'red', label='Test')
     # prepare the plot
     plt.title('Accuracy for ' + activation_name)
     plt.ylabel('Accuracy (%)')
@@ -257,7 +238,7 @@ def plotLoss(model, activation_name):
     plt.title('Loss for '  + activation_name)
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.legend(['Train', 'Test'], loc='upper right')
+    plt.legend(['Loss', 'Test'], loc='upper right')
     # plt.show()
     plt.savefig(activation_name +"loss"+".png")
     plt.close()
@@ -291,11 +272,17 @@ def main():
     num_of_inputs = x_train.shape[1:]
     num_of_outputs = len(y_train[0])
     
+
+
+    eta = [0.001]
+    optimizers = ['adam']
     experiment = [2, 3, 4, 5]
 
     # build model
-    for e in experiment:
-        CNN(num_of_inputs, num_of_outputs, x_train, y_train, x_test, y_test, e)
+    for n in eta:
+        for op in optimizers:
+            for e in experiment:
+                CNN(num_of_inputs, num_of_outputs, x_train, y_train, x_test, y_test, e, n, op)
 
 
 

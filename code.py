@@ -68,9 +68,9 @@ def unpickle_all_data(directory):
     test_y = np.array(test_y)
     
     return (train_x, train_y), (test_x, test_y)
-# /content/drive/My Drive/CS410 Deep Learning Theory/Assignments/Assignment 3/Code3.ipynb
+    # /content/drive/My Drive/CS410 Deep Learning Theory/Assignments/Assignment 3/Code3.ipynb
 
-def pickle_dump(x_train, y_train, x_test, y_train):
+def pickle_dump(x_train, y_train, x_test, y_test):
     with open('data/validation/test-x', 'wb') as handle:
         pickle.dump(x_test, handle, protocol=pickle.HIGHEST_PROTOCOL)
     with open('data/validation/test-y', 'wb') as handle:
